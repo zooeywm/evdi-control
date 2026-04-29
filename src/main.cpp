@@ -11,6 +11,7 @@
 #include <thread>
 #include <vector>
 
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "display_backend.h"
@@ -278,13 +279,26 @@ void wait_for_worker_state(const std::string& state_path, pid_t worker_pid, cons
         if (file_exists(state_path)) {
             return;
         }
-        if (!process_alive(worker_pid)) {
+
+        int child_status = 0;
+        const pid_t wait_result = ::waitpid(worker_pid, &child_status, WNOHANG);
+        if (wait_result == worker_pid) {
             const std::string details = file_exists(log_path) ? trim(read_text_file(log_path)) : "";
             throw CommandError("worker exited early: " + details);
         }
+        if (wait_result < 0 && errno == ECHILD && !process_alive(worker_pid)) {
+            const std::string details = file_exists(log_path) ? trim(read_text_file(log_path)) : "";
+            throw CommandError("worker exited early: " + details);
+        }
+
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
-    throw CommandError("timed out waiting for worker state file");
+
+    const std::string details = file_exists(log_path) ? trim(read_text_file(log_path)) : "";
+    if (details.empty()) {
+        throw CommandError("timed out waiting for worker state file");
+    }
+    throw CommandError("timed out waiting for worker state file: " + details);
 }
 
 pid_t spawn_worker(const std::string& name,
