@@ -19,6 +19,10 @@ public:
     void close(evdi_handle handle) const;
     void connect(evdi_handle handle, const unsigned char* edid, unsigned int edid_length, std::uint32_t area_limit) const;
     void disconnect(evdi_handle handle) const;
+    void register_buffer(evdi_handle handle, const evdi_buffer& buffer) const;
+    void unregister_buffer(evdi_handle handle, int buffer_id) const;
+    bool request_update(evdi_handle handle, int buffer_id) const;
+    void grab_pixels(evdi_handle handle, evdi_rect* rects, int* num_rects) const;
     int get_event_ready(evdi_handle handle) const;
     void handle_events(evdi_handle handle, evdi_event_context* context) const;
 
@@ -33,6 +37,10 @@ private:
     void (*close_)(evdi_handle) = nullptr;
     void (*connect_)(evdi_handle, const unsigned char*, unsigned int, std::uint32_t) = nullptr;
     void (*disconnect_)(evdi_handle) = nullptr;
+    void (*register_buffer_)(evdi_handle, evdi_buffer) = nullptr;
+    void (*unregister_buffer_)(evdi_handle, int) = nullptr;
+    bool (*request_update_)(evdi_handle, int) = nullptr;
+    void (*grab_pixels_)(evdi_handle, evdi_rect*, int*) = nullptr;
     evdi_selectable (*get_event_ready_)(evdi_handle) = nullptr;
     void (*handle_events_)(evdi_handle, struct evdi_event_context*) = nullptr;
 };
